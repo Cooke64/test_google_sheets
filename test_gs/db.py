@@ -21,10 +21,13 @@ class Database:
         )
         self.cur = self.conn.cursor()
 
-    def execute_query(self, query):
+    def execute_query(self, query, values=None):
         """Выполнение crud."""
         try:
-            self.cur.execute(query)
+            if not values:
+                self.cur.execute(query)
+            else:
+                self.cur.execute(query, values)
             self.conn.commit()
         except (Exception, psycopg2.Error) as error:
             print("Произошла ошибка при подключении.", error)
@@ -55,7 +58,7 @@ table = (
     '(id serial PRIMARY KEY,'
     'number integer NOT NULL,'
     'price float NOT NULL,'
-    'purchase_time date DEFAULT CURRENT_DATE);'
+    'delivered_at timestamp DEFAULT CURRENT_DATE);'
 )
 
 db.connect()

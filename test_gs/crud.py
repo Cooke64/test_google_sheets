@@ -1,6 +1,7 @@
 import logging
 import sys
 import time
+from datetime import datetime
 from typing import Optional, List
 
 import schedule
@@ -12,6 +13,7 @@ from test_gs.sheets import sheet
 
 
 def get_last_row() -> List[int]:
+    """Получение последней строки в google_sheets."""
     query = sheet.get_last_row()
     if query:
         return query
@@ -20,25 +22,24 @@ def get_last_row() -> List[int]:
 
 
 def check_bd() -> Optional[bool]:
+    """Получаем состояние бд по уникальному номеру заказа. Сравниваем
+    последнюю запись в google_sheets.
+    """
     db.cur.execute("SELECT number FROM orders")
     record = db.cur.fetchall()
     query = sheet.get_last_row()
-    # date_object = datetime.strptime(str(query[2]), '%d-%m-%Y')
-    # item_purchase_time = datetime.date(date_object)
     return True if (int(query[0]),) not in record else False
 
 
 def update_bd() -> None:
-    """Получаем состояние бд по уникальному номеру заказа. Сравниваем последнюю запись в
-    google_sheets. Если номера такого нет в бд, то добавляем, если нет, то продолжаем проверку.
-    """
+    """Добавление записи в бд. Каждая новая запись логируется."""
     query = get_last_row()
+    date_object: datetime = datetime.strptime(str(query[2]), '%d-%m-%Y')
     if check_bd():
-        table = f"INSERT INTO orders(number, price) VALUES ('{query[0]}', {int(query[1]) * currency.get_res()})"
-        db.execute_query(table)
+        insert_query = """ INSERT INTO orders (number, price, delivered_at) VALUES (%s, %s, %s)"""
+        item_tuple = (query[0], int(query[1]) * currency.get_res(), date_object)
+        db.execute_query(insert_query, item_tuple)
         logging.info(f'Добавлена запись {int(query[0]),}')
-        print('Добавлено')
-    print('Нечего добавлять')
 
 
 def runer_update_bd(params: int) -> update_bd:

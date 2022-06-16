@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from typing import Tuple
 
 import telebot
 from dotenv import load_dotenv
@@ -14,6 +15,11 @@ bot = telebot.TeleBot(API_TOKEN)
 NUMBER, PRICE, DATE = sheet.get_last_row()
 
 
+def get_params() -> Tuple[int, int, datetime]:
+    number, price, date = sheet.get_last_row()
+    return number, price, date
+
+
 def is_delayed(table_time: str) -> bool:
     current_date = datetime.now()
     date_object = datetime.strptime(table_time, '%d.%m.%Y')
@@ -23,11 +29,11 @@ def is_delayed(table_time: str) -> bool:
 @bot.message_handler(commands=['start'])
 def start_bot_process(message):
     """Запускаем работу бота. Отображение начального экрана бота."""
-    bot.send_message(
-        message.chat.id,
-        text=f'Привет, {message.from_user.first_name}!'
-             f'Последний заказ № {NUMBER}, {int(PRICE) * currency.get_res()} до {DATE}',
-    )
+    number, price, date = get_params()
+    bot.send_message(message.chat.id,
+                     text=f'Привет, {message.from_user.first_name}!'
+                          f'Последний заказ № {number}, {int(price) * currency.get_res()} до {date}',
+                     )
 
 
 bot.polling(none_stop=True)
