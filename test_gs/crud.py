@@ -1,27 +1,44 @@
+import logging
+import sys
 import time
+from typing import Optional, List
 
 import schedule
 
 from test_gs.currency_rate import currency
 from test_gs.db import db
+from test_gs.exceptions import EmptySheet
 from test_gs.sheets import sheet
 
 
-def update_bd():
+def get_last_row() -> List[int]:
+    query = sheet.get_last_row()
+    if query:
+        return query
+    else:
+        logging.info(EmptySheet)
+
+
+def check_bd() -> Optional[bool]:
+    db.cur.execute("SELECT number FROM orders")
+    record = db.cur.fetchall()
+    query = sheet.get_last_row()
+    # date_object = datetime.strptime(str(query[2]), '%d-%m-%Y')
+    # item_purchase_time = datetime.date(date_object)
+    return True if (int(query[0]),) not in record else False
+
+
+def update_bd() -> None:
     """Получаем состояние бд по уникальному номеру заказа. Сравниваем последнюю запись в
     google_sheets. Если номера такого нет в бд, то добавляем, если нет, то продолжаем проверку.
     """
-    db.cur.execute("SELECT number FROM orders")
-    record = db.cur.fetchall()
-    q = sheet.get_last_row()
-    # date_object = datetime.strptime(str(q[2]), '%d-%m-%Y')
-    # item_purchase_time = datetime.date(date_object)
-    if (int(q[0]),) in record:
-        print('Новых записей нет')
-    else:
-        table = f"INSERT INTO orders(number, price) VALUES ('{q[0]}', {int(q[1]) * currency.get_res()})"
+    query = get_last_row()
+    if check_bd():
+        table = f"INSERT INTO orders(number, price) VALUES ('{query[0]}', {int(query[1]) * currency.get_res()})"
         db.execute_query(table)
-        print(f'Добавлена запись {int(q[0]),}')
+        logging.info(f'Добавлена запись {int(query[0]),}')
+        print('Добавлено')
+    print('Нечего добавлять')
 
 
 def runer_update_bd(params: int) -> update_bd:
@@ -33,5 +50,11 @@ def runer_update_bd(params: int) -> update_bd:
 
 
 if __name__ == '__main__':
+    logging.basicConfig(
+        level=logging.INFO,
+        format='[%(asctime)s] [%(levelname)s] %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+        handlers=[logging.StreamHandler(stream=sys.stdout)],
+    )
     # Запуск скрипта по обновления страниц
-    runer_update_bd(60)
+    runer_update_bd(5)
