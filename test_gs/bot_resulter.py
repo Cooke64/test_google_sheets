@@ -1,4 +1,5 @@
 import os
+import time
 from datetime import datetime
 from typing import Tuple
 
@@ -6,6 +7,7 @@ import telebot
 from dotenv import load_dotenv
 
 from test_gs.currency_rate import currency
+from test_gs.db import db
 from test_gs.sheets import sheet
 
 load_dotenv()
@@ -34,6 +36,23 @@ def start_bot_process(message):
                      text=f'Привет, {message.from_user.first_name}!'
                           f'Последний заказ № {number}, {int(price) * currency.get_res()} до {date}',
                      )
+
+
+@bot.callback_query_handler(func=lambda call: True)
+def callback_worker(call):
+    """Вывод результатов запроса на экран бота."""
+    if call.data is not None:
+        bot.answer_callback_query(
+            callback_query_id=call.id,
+            show_alert=False,
+            text='Сейчас покажу просроченные заказы!'
+        )
+        db.cur.execute("SELECT * FROM orders")
+        record = db.cur.fetchall()
+        for a in record:
+            if is_delayed(a[2]):
+                bot.send_message(call.message.chat.id, f'Заказ №{a} просрочен. Примите меры!')
+                time.sleep(50)
 
 
 bot.polling(none_stop=True)
