@@ -1,3 +1,4 @@
+import psycopg2
 import psycopg2 as pg2
 
 
@@ -22,8 +23,11 @@ class Database:
 
     def execute_query(self, query):
         """Выполнение crud."""
-        self.cur.execute(query)
-        self.conn.commit()
+        try:
+            self.cur.execute(query)
+            self.conn.commit()
+        except (Exception, psycopg2.Error) as error:
+            print("Произошла ошибка при подключении.", error)
 
     def close(self):
         """Закрытие бд."""
@@ -56,4 +60,3 @@ table = (
 
 db.connect()
 db.execute_query(table)
-
