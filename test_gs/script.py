@@ -47,13 +47,9 @@ def update_bd() -> None:
     date_object: datetime = datetime.strptime(str(query[2]), '%d-%m-%Y')
     if check_bd():
         insert_query = """ INSERT INTO orders (number, price, delivered_at) VALUES (%s, %s, %s)"""
-        item_tuple = validate_insert_items(query[0],
-                                           int(query[1]) * currency.get_res(),
-                                           date_object)
+        item_tuple = validate_insert_items(int(query[0]), int(query[1]) * currency.get_res(), date_object)
         db.execute_query(insert_query, item_tuple)
         logging.info(f'Добавлена запись {int(query[0]),}')
-    else:
-        print('ничего нового')
 
 
 def runer_update_bd(params: int) -> update_bd:
