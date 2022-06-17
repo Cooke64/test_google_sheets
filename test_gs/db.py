@@ -32,7 +32,7 @@ class Database:
         except (Exception, psycopg2.Error) as error:
             print("Произошла ошибка при подключении.", error)
 
-    def close(self):
+    def __close(self):
         """Закрытие бд."""
         self.cur.close()
         self.conn.close()
